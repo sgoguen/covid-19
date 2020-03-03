@@ -41,38 +41,35 @@ module WorldOMeter =
 
     let inline toInt x = try Nullable<int>(int(x)) with | _ -> Nullable()
 
-    let getSnapshot() = 
+    type WorldOMeter() = 
+        let page = CoronaPage()
         let dateTime = DateTime.UtcNow
-        [ for r in CoronaPage().Tables.Main_table_countries.Rows ->
-            { 
-                Country = r.``Country, Other``
-                TotalCases = r.``Total Cases`` |> toInt
-                TotalDeaths = r.``Total Deaths`` |> toInt
-                TotalRecovered = r.``Total Recovered`` |> toInt
-                ActiveCases = r.``Active Cases`` |> toInt
-                NewCases = r.``New Cases`` |> toInt
-                NewDeaths = r.``New Deaths`` |> toInt
-                SeriousAndCritical = r.``Serious, Critical`` |> toInt
-                LastUpdated = dateTime.ToString("o")
-            } 
-        ]
+        member this.CountrySummary =         
+            [ for r in page.Tables.Main_table_countries.Rows ->
+                { 
+                    Country = r.``Country, Other``
+                    TotalCases = r.``Total Cases`` |> toInt
+                    TotalDeaths = r.``Total Deaths`` |> toInt
+                    TotalRecovered = r.``Total Recovered`` |> toInt
+                    ActiveCases = r.``Active Cases`` |> toInt
+                    NewCases = r.``New Cases`` |> toInt
+                    NewDeaths = r.``New Deaths`` |> toInt
+                    SeriousAndCritical = r.``Serious, Critical`` |> toInt
+                    LastUpdated = dateTime.ToString("o")
+                } 
+            ]
 
 
 
 [<EntryPoint>]
 let main argv =
     Console.Clear()
-    // let filename = File.getFilename "world-o-meter" (DateTime.Now)
     
-    WorldOMeter.getSnapshot()
+    let worldoMeter = WorldOMeter.WorldOMeter()
+
+
+    worldoMeter.CountrySummary
         |> CsvArchive.writeRecords "world-o-meter"
         |> ignore
-
-    // let csvTest = [
-    //     {| X = 5; Name = "Steve" |}
-    //     {| X = 8; Name = "Jim" |}
-    // ]
-    // // printfn "Writing to %s" filename
-    // ignore(CsvArchive.writeRecords "test" csvTest)
 
     0
