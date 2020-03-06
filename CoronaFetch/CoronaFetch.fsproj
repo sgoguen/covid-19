@@ -6,6 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Csv.fs" />
+    <Compile Include="WorldOMeter.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
