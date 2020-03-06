@@ -12,6 +12,13 @@ module Csv =
         use csv = new CsvWriter(writer, CultureInfo.InvariantCulture)
         csv.WriteRecords(records)
 
+    let readRecords<'a> (filename: string) = 
+        use reader = new StreamReader(filename)
+        use csv = new CsvReader(reader, CultureInfo.InvariantCulture)
+        csv.Configuration.HasHeaderRecord <- true
+        //csv.Configuration.PrepareHeaderForMatch <- (fun header index -> header)
+        csv.GetRecords<'a>()
+
 module CsvArchive =
     open System.IO
     let writeRecords (archiveName: string) (records: 'a list) = 
@@ -59,10 +66,74 @@ module WorldOMeter =
                 } 
             ]
 
+    type CountryStatFile = CsvProvider<Sample="./data/world-o-meter/2020-03-01--21.csv">
 
+    type CountryStatInfo = {
+        Country: string
+        TotalCases: Nullable<int>
+        TotalDeaths: Nullable<int>
+        TotalRecovered: Nullable<int>
+        ActiveCases: Nullable<int>
+        NewCases: Nullable<int>
+        NewDeaths: Nullable<int>
+        SeriousAndCritical: Nullable<int>
+        LastUpdated: DateTimeOffset
+    }
+
+    let byDate c = c.LastUpdated.Date
+    let lastByDate = 
+        List.groupBy byDate
+        >> List.sortBy fst
+        >> List.map (snd >> List.sortBy byDate >> List.head)
+
+    let load(filename:string): CountryStatInfo list = 
+        let stats = CountryStatFile.Load(filename)
+        [ for r in stats.Rows do 
+            {
+                Country = r.Country
+                LastUpdated = r.LastUpdated
+                TotalCases = Nullable(r.TotalCases)
+                TotalDeaths = Nullable(r.TotalDeaths)
+                TotalRecovered = Nullable(0)
+                ActiveCases = Nullable(0)
+                NewCases = Nullable(0)
+                NewDeaths = Nullable(0)
+                SeriousAndCritical = Nullable(0)
+            }
+        ]
+
+    let readData() = 
+        let directory = System.IO.Path.GetFullPath("./data/world-o-meter/")
+        let files = System.IO.Directory.EnumerateFiles(directory)
+        [ for f in files do 
+            for r in load(f) do
+                r 
+        ]
 
 [<EntryPoint>]
-let main argv =
+let rec main args = 
+    args 
+        |> List.ofArray 
+        |> function 
+            | ["fetch"] -> fetchStats()
+            | _ -> readData()
+    0
+
+and readData() = 
+    let records = WorldOMeter.readData()
+                    |> List.groupBy(fun r -> r.Country)
+                    |> List.map(fun (country, list) -> country, WorldOMeter.lastByDate list )
+                    // |> List.filter (fun r -> r.Country = "USA")
+                    // |> WorldOMeter.lastByDate
+
+    printfn "Files: %A" records
+
+and showHelp() = 
+    printfn "%A" [
+        "fetch - Fetches the latest data"
+    ]
+
+and fetchStats() =
     Console.Clear()
     
     let worldoMeter = WorldOMeter.WorldOMeter()
@@ -72,4 +143,3 @@ let main argv =
         |> CsvArchive.writeRecords "world-o-meter"
         |> ignore
 
-    0
