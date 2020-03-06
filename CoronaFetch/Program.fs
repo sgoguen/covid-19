@@ -1,6 +1,13 @@
 ﻿module CoronaFetch.App
 
 open System
+open System.Text.RegularExpressions
+open System.IO
+
+
+let nonLetters = Regex("[^\\w]")
+let encodeCountryName(name:string) = 
+    nonLetters.Replace(name, "-")
 
 
 
@@ -12,6 +19,15 @@ let rec main args =
             | ["fetch"] -> fetchStats()
             | ["read"; country] -> WorldOMeter.readCountry(country)
                                     |> Csv.printRecords
+            | ["writeAll"] ->
+                let countries = WorldOMeter.allCountries.Value
+                for c in countries do
+                    let filename = encodeCountryName(c) + ".csv"
+                    let path = Path.GetFullPath("./reports/" + filename)
+                    let records = WorldOMeter.readCountry(c)
+                    Csv.writeRecords path records
+                    printfn "Country: %s - %s" c filename
+                    ()
             | _ -> showHelp()
     0
 

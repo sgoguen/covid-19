@@ -1,0 +1,6 @@
+TotalCases,CaseGrowthRate,TotalDeaths,DeathGrowthRate,ActiveCases,ActiveCasesChange,NewCases,NewDeaths,SeriousAndCritical,SeriousAndCriticalChange,LastUpdated
+3,0,0,0,3,0,2,0,0,0,03/01/2020 22:10:38 +00:00
+7,2.3333,0,0,7,2.3333,4,0,0,0,03/02/2020 23:50:25 +00:00
+8,1.1429,0,0,8,1.1429,1,0,0,0,03/03/2020 23:00:01 +00:00
+8,1,0,0,8,1,0,0,0,0,03/05/2020 15:52:19 +00:00
+8,1,0,0,8,1,0,0,0,0,03/06/2020 14:39:12 +00:00

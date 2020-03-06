@@ -41,13 +41,13 @@ module WorldOMeter =
 
     type CountryStatInfo = {
         Country: string
-        TotalCases: Nullable<int>
-        TotalDeaths: Nullable<int>
-        TotalRecovered: Nullable<int>
-        ActiveCases: Nullable<int>
-        NewCases: Nullable<int>
-        NewDeaths: Nullable<int>
-        SeriousAndCritical: Nullable<int>
+        TotalCases: int
+        TotalDeaths: int
+        TotalRecovered: int
+        ActiveCases: int
+        NewCases: int
+        NewDeaths: int
+        SeriousAndCritical: int
         LastUpdated: DateTimeOffset
     }
 
@@ -59,17 +59,19 @@ module WorldOMeter =
 
     let load(filename:string): CountryStatInfo list = 
         let stats = CountryStatFile.Load(filename)
+        let readInt(f) = try f() |> max 0 with _ -> 0
+        let (?|) (n:Nullable<_>) v = if n.HasValue then n.Value else v
         [ for r in stats.Rows do 
             {
                 Country = r.Country
                 LastUpdated = r.LastUpdated
-                TotalCases = Nullable(r.TotalCases |> max 0)
-                TotalDeaths = Nullable(r.TotalDeaths |> max 0)
-                TotalRecovered = Nullable(0)
-                ActiveCases = Nullable(0)
-                NewCases = Nullable(0)
-                NewDeaths = Nullable(0)
-                SeriousAndCritical = Nullable(0)
+                TotalCases = readInt(fun _ -> r.TotalCases)
+                TotalDeaths = readInt(fun _ -> r.TotalDeaths)
+                TotalRecovered = readInt(fun _ -> r.TotalRecovered)
+                ActiveCases = readInt(fun _ -> r.ActiveCases)
+                NewCases = readInt(fun _ -> r.NewCases)
+                NewDeaths = readInt(fun _ -> r.NewDeaths ?| 0)
+                SeriousAndCritical = readInt(fun _ -> r.SeriousAndCritical)
             }
         ]
 
@@ -81,12 +83,14 @@ module WorldOMeter =
                 r 
         ]
 
+    let allCountries = lazy Set.ofList [ for r in readData() -> r.Country ]
+
     type DailyStat(r:CountryStatInfo, prevDay:CountryStatInfo option) = 
         let hasPrevDay = prevDay.IsSome
-        let rateOf(f: CountryStatInfo -> Nullable<int>): float = 
+        let rateOf(f: CountryStatInfo -> int): float = 
             match prevDay with
-            | Some(p) -> let n = double(f(r).Value)
-                         let d = double(f(p).Value)
+            | Some(p) -> let n = double(f(r))
+                         let d = double(f(p))
                          if n = 0.0 || d = 0.0 then 0.0
                          else Math.Round((n / d), 4)
             | None -> 0.0
@@ -94,6 +98,12 @@ module WorldOMeter =
         member this.CaseGrowthRate = rateOf(fun r -> r.TotalCases)
         member this.TotalDeaths = r.TotalDeaths
         member this.DeathGrowthRate = rateOf(fun r -> r.TotalDeaths)
+        member this.ActiveCases = r.ActiveCases
+        member this.ActiveCasesChange = rateOf(fun r -> r.ActiveCases)
+        member this.NewCases = r.NewCases
+        member this.NewDeaths = r.NewDeaths
+        member this.SeriousAndCritical = r.SeriousAndCritical
+        member this.SeriousAndCriticalChange = rateOf(fun r -> r.SeriousAndCritical)
         member this.LastUpdated = r.LastUpdated
 
     let readCountry(country: string) = 
