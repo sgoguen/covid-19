@@ -3,7 +3,8 @@ namespace CoronaFetch
 module WorldOMeter =
     open System
     open FSharp.Data
-    type CoronaPage = HtmlProvider<"https://www.worldometers.info/coronavirus/">
+    type CoronaPage = HtmlProvider<Sample="https://www.worldometers.info/coronavirus/", 
+                                   PreferOptionals=true>
 
     type CountryStatCsv = {
         Country: string
@@ -17,25 +18,36 @@ module WorldOMeter =
         LastUpdated: string
     }
 
-    let inline toInt x = try Nullable<int>(int(x)) with | _ -> Nullable()
+    // let inline toInt x = try Nullable<int>(int(x)) with | _ -> Nullable()
+
+    let inline toInt x = x |> Option.map (fun v -> int(v)) |> Option.toNullable
+     //  try Nullable<int>(int(x)) with | _ -> Nullable()
+
+
+    let tryGet f defaultVal = try f() with _ -> defaultVal      
 
     type WorldOMeter() = 
         let page = CoronaPage()
         let dateTime = DateTime.UtcNow
-        member this.CountrySummary =         
-            [ for r in page.Tables.Main_table_countries.Rows ->
-                { 
-                    Country = r.``Country, Other``
-                    TotalCases = r.``Total Cases`` |> toInt
-                    TotalDeaths = r.``Total Deaths`` |> toInt
-                    TotalRecovered = r.``Total Recovered`` |> toInt
-                    ActiveCases = r.``Active Cases`` |> toInt
-                    NewCases = r.``New Cases`` |> toInt
-                    NewDeaths = r.``New Deaths`` |> toInt
-                    SeriousAndCritical = r.``Serious, Critical`` |> toInt
-                    LastUpdated = dateTime.ToString("o")
-                } 
+        member this.CountrySummary =
+            [
+                for r in page.Tables.Main_table_countries.Html. do
+                    r.
             ]
+            // [ for r in page.Tables.Main_table_countries.Rows ->
+            //     { 
+            //         Country = tryGet(fun _ -> r.``Country, Other``) "Bad Country"
+            //         TotalCases = r.``Total Cases`` |> int |> Nullable
+            //         TotalDeaths = tryGet(fun _ -> r.``Total Deaths`` |> toInt) (Nullable())
+            //         TotalRecovered = tryGet(fun _ -> r.``Total Recovered`` |> toInt) (Nullable())
+            //         ActiveCases = Nullable(0)
+            //         // ActiveCases = tryGet(fun _ -> r.``Active Cases`` |> int |> Nullable) (Nullable())
+            //         NewCases = tryGet(fun _ -> r.``New Cases`` |> toInt) (Nullable())
+            //         NewDeaths = tryGet(fun _ -> r.``New Deaths`` |> toInt) (Nullable())
+            //         SeriousAndCritical = tryGet(fun _ -> r.``Serious, Critical`` |> toInt) (Nullable())
+            //         LastUpdated = dateTime.ToString("o")
+            //     } 
+            // ]
 
     type CountryStatFile = CsvProvider<Sample="./data/world-o-meter/2020-03-01--21.csv">
 

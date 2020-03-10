@@ -16,7 +16,8 @@ let rec main args =
     args 
         |> List.ofArray 
         |> function 
-            | ["fetch"] -> fetchStats()
+            | ["stats"; "fetch"] -> fetchStats()
+            | ["stats"; "save"] -> saveStats()
             | ["read"; country] -> WorldOMeter.readCountry(country)
                                     |> Csv.printRecords
             | ["writeAll"] ->
@@ -43,6 +44,13 @@ and showHelp() =
     ]
 
 and fetchStats() =
+    Console.Clear()
+    
+    let worldoMeter = WorldOMeter.WorldOMeter()
+
+    printfn "Stats: %A" [ for o in worldoMeter.CountrySummary -> o ]
+
+and saveStats() =
     Console.Clear()
     
     let worldoMeter = WorldOMeter.WorldOMeter()
